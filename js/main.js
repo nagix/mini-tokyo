@@ -76,7 +76,7 @@ Promise.all([
 
 	transition(g.selectAll('.car'));
 
-	map.on('moveend', update);
+	map.on('zoomend', update);
 
 	// For development
 	map.on('mousemove', function(e) {
@@ -218,6 +218,7 @@ Promise.all([
 			line.stations.forEach(function(station, i, stations) {
 				var length = getLengthAtLatLng(line.path, stationLookup[station.name].latLng, true);
 				station.offset = length / totalLength;
+				// console.log(station.name, getPointAtLengthWithRotation(g.select('.' + line.name + '.line').node(), length, totalLength).angle)
 			});
 		});
 

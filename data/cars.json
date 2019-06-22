@@ -2,37 +2,37 @@
 	"cars": [{
 		"line": "yamanote",
 		"direction": 1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 0,
 		"sectionOffset": 0
 	}, {
 		"line": "yamanote",
 		"direction": 1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 10,
 		"sectionOffset": 0
 	}, {
 		"line": "yamanote",
 		"direction": 1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 20,
 		"sectionOffset": 0
 	}, {
 		"line": "yamanote",
 		"direction": -1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 29,
 		"sectionOffset": 0
 	}, {
 		"line": "yamanote",
 		"direction": -1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 19,
 		"sectionOffset": 0
 	}, {
 		"line": "yamanote",
 		"direction": -1,
-		"duration": 150000,
+		"duration": 145000,
 		"sectionIndex": 9,
 		"sectionOffset": 0
 	}, {
@@ -46,6 +46,18 @@
 		"direction": -1,
 		"duration": 50000,
 		"sectionIndex": 10,
+		"sectionOffset": 0
+	}, {
+		"line": "keihintohoku",
+		"direction": 1,
+		"duration": 65000,
+		"sectionIndex": 0,
+		"sectionOffset": 0
+	}, {
+		"line": "keihintohoku",
+		"direction": -1,
+		"duration": 65000,
+		"sectionIndex": 13,
 		"sectionOffset": 0
 	}]
 }

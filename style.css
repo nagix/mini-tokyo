@@ -17,6 +17,10 @@ body {
 	stroke: #CA6840;
 	fill: #CA6840;
 }
+.keihintohoku {
+	stroke: #00B2E5;
+	fill: #00B2E5;
+}
 .line {
 	stroke-width: 4;
 	fill: none;
