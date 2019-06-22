@@ -33,6 +33,11 @@ body {
 	display: none;
 }
 
+.easy-button-button {
+	padding-left: 6px;
+	padding-right: 6px;
+}
+
 /* For development */
 .leaflet-container.crosshair-cursor-enabled {
 	cursor:crosshair;

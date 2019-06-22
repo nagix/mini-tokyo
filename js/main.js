@@ -46,6 +46,7 @@ Promise.all([
 			return latLag;
 		});
 	});
+
 	stationData.stations.forEach(function(station) {
 		var coords = station.coords;
 		station.latLng = new L.latLng(coords[0], coords[1]);
@@ -60,26 +61,16 @@ Promise.all([
 		})
 		.curve(d3.curveCardinal.tension(.4));
 
-	var lineGeneratorSub = d3.line()
+	var simpleLineGenerator = d3.line()
 		.x(function(d) { return map.latLngToLayerPoint(d).x; })
 		.y(function(d) { return map.latLngToLayerPoint(d).y; })
 		.curve(d3.curveCardinal.tension(.4));
 
+	updateLines();
+
+	initPathAngles();
+
 	update();
-
-	initPathOffsets();
-	initStationOffsets();
-
-	update();
-
-	carData.cars.forEach(function(car) {
-		var stations = lineLookup[car.line].stations;
-		var sectionIndex = car.sectionIndex;
-		var sectionOffset = stations[sectionIndex].offset;
-		var nextSectionOffset = stations[sectionIndex + car.direction].offset;
-		car.sectionOffset = sectionOffset;
-		car.sectionLength = nextSectionOffset - sectionOffset;
-	});
 
 	transition(g.selectAll('.car'));
 
@@ -91,13 +82,19 @@ Promise.all([
 		console.log([latlng.lat.toFixed(4), latlng.lng.toFixed(4)]);
 	});
 
-	function update() {
+	function updateLines() {
 		var lines = g.selectAll('.line')
 			.data(lineData.lines);
 		lines.enter().append('path')
 			.attr('class', function(d) { return d.name + ' line'; })
 			.merge(lines)
 			.attr('d', function(d) { return lineGenerator(d.path); });
+	}
+
+	function update() {
+		updateLines();
+
+		updateStationOffsets();
 
 		// For development
 		var points = g.selectAll('.point')
@@ -201,7 +198,7 @@ Promise.all([
 		}
 	}
 
-	function initPathOffsets() {
+	function initPathAngles() {
 		lineData.lines.forEach(function(line) {
 			var path = g.select('.' + line.name + '.line').node();
 			var totalLength = path.getTotalLength();
@@ -213,20 +210,30 @@ Promise.all([
 		});
 	}
 
-	function initStationOffsets() {
+	function updateStationOffsets() {
 		lineData.lines.forEach(function(line) {
 			var totalLength = g.select('.' + line.name + '.line').node().getTotalLength();
 			line.stations.forEach(function(station, i, stations) {
-				var length = getLengthAtLatLng(line.path, stationLookup[station.name].latLng);
+				var length = getLengthAtLatLng(line.path, stationLookup[station.name].latLng, true);
 				station.offset = length / totalLength;
 			});
 		});
 
 		// Temporary workaround
 		lineData.lines[0].stations[29].offset = 1;
+
+		// Update section offsets and length for cars as well
+		carData.cars.forEach(function(car) {
+			var stations = lineLookup[car.line].stations;
+			var sectionIndex = car.sectionIndex;
+			var sectionOffset = stations[sectionIndex].offset;
+			var nextSectionOffset = stations[sectionIndex + car.direction].offset;
+			car.sectionOffset = sectionOffset;
+			car.sectionLength = nextSectionOffset - sectionOffset;
+		});
 	}
 
-	function getLengthAtLatLng(path, latLng) {
+	function getLengthAtLatLng(path, latLng, useOffset) {
 		var subpath = [];
 		var i, point, selection;
 
@@ -242,7 +249,7 @@ Promise.all([
 		selection.enter().append('path')
 			.attr('class', 'subpath')
 			.merge(selection)
-			.attr('d', lineGeneratorSub);
+			.attr('d', useOffset ? lineGenerator : simpleLineGenerator);
 
 		return g.selectAll('.subpath').node().getTotalLength();
 	}
