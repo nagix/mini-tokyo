@@ -15,6 +15,8 @@ L.tileLayer('https://api.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={acc
 	accessToken: accessToken
 }).addTo(map);
 
+map.addControl(new L.Control.Fullscreen());
+
 L.easyButton('fab fa-github fa-lg', function(btn, easyMap){
 	window.open('https://github.com/nagix/mini-tokyo');
 }).addTo(map);
