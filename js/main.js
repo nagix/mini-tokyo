@@ -34,24 +34,38 @@ Promise.all([
 	});
 
 	/* Add a LatLng object to each item in the dataset */
-	lineData.lines.forEach(function(d) {
-		d.path = d.path.map(function(point) {
-			return new L.latLng(point[0], point[1]);
+	lineData.lines.forEach(function(line) {
+		line.path = line.path.map(function(point) {
+			var latLag = new L.latLng(point[0], point[1]);
+			latLag._offset = point[2];
+			return latLag;
 		});
 	});
+	stationData.stations.forEach(function(station) {
+		var coords = station.coords;
+		station.latLng = new L.latLng(coords[0], coords[1]);
+	});
 
-	var line = d3.line()
+	var lineGenerator = d3.line()
 		.x(function(d) {
-			return map.latLngToLayerPoint(d).x;
+			return map.latLngToLayerPoint(d).x + (d._offset && d._angle ? -d._offset * 8 * Math.sin(d._angle * Math.PI / 180) : 0);
 		})
 		.y(function(d) {
-			return map.latLngToLayerPoint(d).y;
+			return map.latLngToLayerPoint(d).y + (d._offset && d._angle ? d._offset * 8 * Math.cos(d._angle * Math.PI / 180) : 0);
 		})
+		.curve(d3.curveCardinal.tension(.4));
+
+	var lineGeneratorSub = d3.line()
+		.x(function(d) { return map.latLngToLayerPoint(d).x; })
+		.y(function(d) { return map.latLngToLayerPoint(d).y; })
 		.curve(d3.curveCardinal.tension(.4));
 
 	update();
 
+	initPathOffsets();
 	initStationOffsets();
+
+	update();
 
 	carData.cars.forEach(function(car) {
 		var stations = lineLookup[car.line].stations;
@@ -78,7 +92,7 @@ Promise.all([
 		lines.enter().append('path')
 			.attr('class', function(d) { return d.name + ' line'; })
 			.merge(lines)
-			.attr('d', function(d) { return line(d.path); });
+			.attr('d', function(d) { return lineGenerator(d.path); });
 
 		// For development
 		var points = g.selectAll('.point')
@@ -104,21 +118,27 @@ Promise.all([
 			.attr('height', 12)
 			.attr('transform', function(d) {
 				var path = g.select('.' + d.line + '.line').node();
-				var p = getPointAtLengthWithRotation(path, d.sectionOffset * path.getTotalLength());
+				var length = path.getTotalLength();
+				var p = getPointAtLengthWithRotation(path, d.sectionOffset * length, d.direction > 0 ? length : 0);
 				return 'translate(' + p.x + ',' + p.y + ') rotate(' + p.angle + ')';
 			});
 
 		var stations = g.selectAll('.station')
 			.data(stationData.stations)
-		stations.enter().append("circle")
+		stations.enter().append("rect")
 			.attr('class', 'station')
-			.attr('r', 5)
+			.attr('x', function(d) { return d.span ? d.span[0] * 8 - 5 : -5; })
+			.attr('y', -5)
+			.attr('width', function(d) { return d.span ? (d.span[1] - d.span[0]) * 8 + 10 : 10; })
+			.attr('height', 10)
+			.attr('rx', 5)
+			.attr('ry', 5)
 			.merge(stations)
 			.attr('transform', function(d) {
-				var latlng = new L.latLng(d.coords);
 				return 'translate(' +
-					map.latLngToLayerPoint(latlng).x + ',' +
-					map.latLngToLayerPoint(latlng).y + ')';
+					map.latLngToLayerPoint(d.latLng).x + ',' +
+					map.latLngToLayerPoint(d.latLng).y + ') rotate(' +
+					((d.angle || 0) + 90) + ')';
 			});
 	}
 
@@ -151,16 +171,24 @@ Promise.all([
 	function translateAlong(d) {
 		var path = g.select('.' + d.line + '.line').node();
 		return function(t) {
-			var l = path.getTotalLength();
-			var p = getPointAtLengthWithRotation(path, (d.sectionOffset + t * d.sectionLength) * l);
+			var length = path.getTotalLength();
+			var p = getPointAtLengthWithRotation(path, (d.sectionOffset + t * d.sectionLength) * length, d.direction > 0 ? length : 0);
 			return 'translate(' + p.x + ',' + p.y + ') rotate(' + p.angle + ')';
 		};
 	}
 
-	function getPointAtLengthWithRotation(path, length) {
-		var p1 = path.getPointAtLength(length)
-		var p2 = path.getPointAtLength(length + 1)
-		var deg = Math.atan2(p1.y - p2.y, p1.x - p2.x) * (180 / Math.PI);
+	function getPointAtLengthWithRotation(path, length, end) {
+		var p1 = path.getPointAtLength(length);
+		var delta = end ? 1 : -1;
+
+		if (Math.abs(end - length) >= 1) {
+			p2 = path.getPointAtLength(length + delta);
+			deg = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+		} else {
+			p2 = path.getPointAtLength(length - delta);
+			deg = Math.atan2(p1.y - p2.y, p1.x - p2.x) * 180 / Math.PI;
+		}
+
 		return {
 			x: p1.x,
 			y: p1.y,
@@ -168,11 +196,23 @@ Promise.all([
 		}
 	}
 
+	function initPathOffsets() {
+		lineData.lines.forEach(function(line) {
+			var path = g.select('.' + line.name + '.line').node();
+			var totalLength = path.getTotalLength();
+			line.path.forEach(function(point) {
+				var length = getLengthAtLatLng(line.path, point);
+				var p = getPointAtLengthWithRotation(path, length, totalLength);
+				point._angle = p.angle;
+			})
+		});
+	}
+
 	function initStationOffsets() {
 		lineData.lines.forEach(function(line) {
 			var totalLength = g.select('.' + line.name + '.line').node().getTotalLength();
 			line.stations.forEach(function(station, i, stations) {
-				var length = getLengthAtPoint(line.path, stationLookup[station.name].coords);
+				var length = getLengthAtLatLng(line.path, stationLookup[station.name].latLng);
 				station.offset = length / totalLength;
 			});
 		});
@@ -181,13 +221,13 @@ Promise.all([
 		lineData.lines[0].stations[29].offset = 1;
 	}
 
-	function getLengthAtPoint(path, coords) {
+	function getLengthAtLatLng(path, latLng) {
 		var subpath = [];
-		var i, latlng, selection;
+		var i, point, selection;
 
 		for (i = 0; i < path.length; ++i) {
-			latlng = path[i];
-			if (latlng.lat === coords[0] && latlng.lng === coords[1]) {
+			point = path[i];
+			if (point.lat === latLng.lat && point.lng === latLng.lng) {
 				subpath = path.slice(0, i + 1);
 				break;
 			}
@@ -197,7 +237,7 @@ Promise.all([
 		selection.enter().append('path')
 			.attr('class', 'subpath')
 			.merge(selection)
-			.attr('d', line);
+			.attr('d', lineGeneratorSub);
 
 		return g.selectAll('.subpath').node().getTotalLength();
 	}

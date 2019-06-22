@@ -1,10 +1,14 @@
 {
 	"stations": [{
 		"name": "tokyo",
-		"coords": [35.6814, 139.7670]
+		"coords": [35.6814, 139.7670],
+		"angle": -73,
+		"span": [-1, 0]
 	}, {
 		"name": "kanda",
-		"coords": [35.6918, 139.7710]
+		"coords": [35.6918, 139.7710],
+		"angle": -72,
+		"span": [-1, 0]
 	}, {
 		"name": "akihabara",
 		"coords": [35.6983, 139.7731]
@@ -49,10 +53,14 @@
 		"coords": [35.7009, 139.7002]
 	}, {
 		"name": "shinjuku",
-		"coords": [35.6898, 139.7006]
+		"coords": [35.6898, 139.7006],
+		"angle": 80,
+		"span": [-1, 0]
 	}, {
 		"name": "yoyogi",
-		"coords": [35.6841, 139.7021]
+		"coords": [35.6841, 139.7021],
+		"angle": 77,
+		"span": [-1, 0]
 	}, {
 		"name": "harajuku",
 		"coords": [35.6713, 139.7027]
