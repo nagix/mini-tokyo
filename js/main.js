@@ -14,6 +14,10 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=p
 	id: 'mapbox.streets'
 }).addTo(map);
 
+L.easyButton('fab fa-github fa-lg', function(btn, easyMap){
+	window.open('https://github.com/nagix/mini-tokyo');
+}).addTo(map);
+
 /* Initialize the SVG layer */
 L.svg().addTo(map);
 
