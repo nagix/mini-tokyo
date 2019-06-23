@@ -25,9 +25,15 @@ body {
 	stroke-width: 4;
 	fill: none;
 }
-.car {
+.car-box {
 	stroke: none;
+    pointer-events: all;
+    cursor: pointer;
 }
+.car-tracking-mark {
+	stroke-width: 2;
+	fill: none;
+ }
 .station-mark {
 	stroke: black;
 	stroke-width: 2;
@@ -47,7 +53,8 @@ body {
 	padding-right: 6px;
 }
 
-/* For development */
+/* For development
 .leaflet-container.crosshair-cursor-enabled {
 	cursor:crosshair;
 }
+*/

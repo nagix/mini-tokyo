@@ -1,10 +1,11 @@
 var map = L.map('map').setView([35.68, 139.75], 13);
 var lineLookup = [];
 var stationLookup = [];
-var g;
+var g, trackedCar;
 
-// For development
+/* For development
 L.DomUtil.addClass(map._container,'crosshair-cursor-enabled');
+*/
 
 L.tileLayer('https://api.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
 	maxZoom: 18,
@@ -21,10 +22,10 @@ L.easyButton('fab fa-github fa-lg', function(btn, easyMap){
 	window.open('https://github.com/nagix/mini-tokyo');
 }).addTo(map);
 
-/* Initialize the SVG layer */
+// Initialize the SVG layer
 L.svg().addTo(map);
 
-/* We simply pick up the SVG from the map object */
+// We simply pick up the SVG from the map object
 g = d3.select('#map').select('svg').select('g');
 
 Promise.all([
@@ -41,7 +42,7 @@ Promise.all([
 		stationLookup[station.name] = station;
 	});
 
-	/* Add a LatLng object to each item in the dataset */
+	// Add a LatLng object to each item in the dataset
 	lineData.lines.forEach(function(line) {
 		line.path = line.path.map(function(point) {
 			var latLag = new L.latLng(point[0], point[1]);
@@ -77,13 +78,19 @@ Promise.all([
 
 	transition(g.selectAll('.car'));
 
+	d3.select('#map').on('mousedown', function() {
+		trackedCar = undefined;
+		updateCars();
+	});
+
 	map.on('zoomend', update);
 
-	// For development
+	/* For development
 	map.on('mousemove', function(e) {
 		var latlng = map.layerPointToLatLng(L.point(e.layerPoint));
 		console.log([latlng.lat.toFixed(4), latlng.lng.toFixed(4)]);
 	});
+	*/
 
 	function updateLines() {
 		var lines = g.selectAll('.line')
@@ -94,12 +101,60 @@ Promise.all([
 			.attr('d', function(d) { return lineGenerator(d.path); });
 	}
 
+	function updateCars() {
+		var cars = g.selectAll('.car')
+			.data(carData.cars);
+		cars = cars.enter().append('g')
+			.attr('class', function(d) { return d.line + ' car'; })
+			.attr('transform', function(d) {
+				var path = g.select('.' + d.line + '.line').node();
+				var length = path.getTotalLength();
+				var p = getPointAtLengthWithRotation(path, d.sectionOffset * length, d.direction > 0 ? length : 0);
+				return 'translate(' + p.x + ',' + p.y + ') rotate(' + p.angle + ')';
+			})
+			.merge(cars);
+
+		cars.selectAll('.car-box')
+			.data(function(d) { return [d]; })
+			.enter().append('rect')
+			.attr('class', function(d) { return d.line + ' car-box'; })
+			.attr('x', -10)
+			.attr('y', -6)
+			.attr('width', 20)
+			.attr('height', 12)
+			.on('click', function(d) {
+				trackedCar = d;
+				updateCars();
+				d3.event.stopPropagation();
+			});
+
+		var trackingMarks = cars.selectAll('.car-tracking-mark')
+			.data(function(d) { return d === trackedCar ? [d] : []; });
+		var activeTrackingMarks = trackingMarks.enter().append('circle')
+			.attr('class', function(d) { return d.line + ' car-tracking-mark'; })
+		trackingMarks.exit().remove();
+
+		repeat();
+
+		function repeat() {
+			activeTrackingMarks
+				.attr('r', 6)
+				.attr('opacity', 1)
+				.transition()
+				.ease(d3.easeLinear)
+				.duration(2000)
+				.attr('r', 80)
+				.attr('opacity', 0)
+				.on('end', repeat);
+		}
+	}
+
 	function update() {
 		updateLines();
 
 		updateStationOffsets();
 
-		// For development
+		/* For development
 		var points = g.selectAll('.point')
 			.data(lineData.lines[0].path.concat(lineData.lines[1].path));
 		points.enter().append('circle')
@@ -112,21 +167,9 @@ Promise.all([
 					map.latLngToLayerPoint(d).x + ',' +
 					map.latLngToLayerPoint(d).y + ')';
 			});
+		*/
 
-		var cars = g.selectAll('.car')
-			.data(carData.cars);
-		cars.enter().append('rect')
-			.attr('class', function(d) { return d.line + ' car'; })
-			.attr('x', -10)
-			.attr('y', -6)
-			.attr('width', 20)
-			.attr('height', 12)
-			.attr('transform', function(d) {
-				var path = g.select('.' + d.line + '.line').node();
-				var length = path.getTotalLength();
-				var p = getPointAtLengthWithRotation(path, d.sectionOffset * length, d.direction > 0 ? length : 0);
-				return 'translate(' + p.x + ',' + p.y + ') rotate(' + p.angle + ')';
-			});
+		updateCars();
 
 		var stations = g.selectAll('.station')
 			.data(stationData.stations);
@@ -194,6 +237,7 @@ Promise.all([
 
 	function transition(element) {
 		element.transition()
+			.ease(d3.easeSin)
 			.duration(function(d) {return d.duration * Math.abs(d.sectionLength);})
 			.attrTween('transform', translateAlong)
 			.on('end', function(d) {
@@ -223,6 +267,15 @@ Promise.all([
 		return function(t) {
 			var length = path.getTotalLength();
 			var p = getPointAtLengthWithRotation(path, (d.sectionOffset + t * d.sectionLength) * length, d.direction > 0 ? length : 0);
+
+			if (d === trackedCar) {
+				var latlng = map.layerPointToLatLng(L.point(p));
+				map.setView(latlng, map.getZoom(), {animate: false});
+				if (latlng === undefined || latlng === null || latlng.lat === undefined || latlng.lat === null || latlng.lat === 0) {
+					console.log(latlng);
+				}
+			}
+
 			return 'translate(' + p.x + ',' + p.y + ') rotate(' + p.angle + ')';
 		};
 	}
