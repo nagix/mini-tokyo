@@ -28,10 +28,11 @@ L.svg().addTo(map);
 g = d3.select('#map').select('svg').select('g');
 
 Promise.all([
+	d3.json('data/dictionary-' + getLang() + '.json'),
 	d3.json('data/lines.json'),
 	d3.json('data/stations.json'),
 	d3.json('data/cars.json')
-]).then(function([lineData, stationData, carData]) {
+]).then(function([dict, lineData, stationData, carData]) {
 	lineData.lines.forEach(function(line) {
 		lineLookup[line.name] = line;
 	});
@@ -101,7 +102,7 @@ Promise.all([
 		// For development
 		var points = g.selectAll('.point')
 			.data(lineData.lines[0].path.concat(lineData.lines[1].path));
-		points.enter().append("circle")
+		points.enter().append('circle')
 			.attr('class', 'point')
 			.style('fill', 'white')
 			.attr('r', 1.5)
@@ -128,22 +129,67 @@ Promise.all([
 			});
 
 		var stations = g.selectAll('.station')
-			.data(stationData.stations)
-		stations.enter().append("rect")
+			.data(stationData.stations);
+		stations = stations.enter().append('g')
 			.attr('class', 'station')
+			.merge(stations)
+			.attr('transform', function(d) {
+				return 'translate(' +
+					map.latLngToLayerPoint(d.latLng).x + ',' +
+					map.latLngToLayerPoint(d.latLng).y + ')';
+			});
+
+		stations.selectAll('.station-mark')
+			.data(function(d) { return [d]; })
+			.enter().append('rect')
+			.attr('class', 'station-mark')
 			.attr('x', function(d) { return d.span ? d.span[0] * 8 - 5 : -5; })
 			.attr('y', -5)
 			.attr('width', function(d) { return d.span ? (d.span[1] - d.span[0]) * 8 + 10 : 10; })
 			.attr('height', 10)
 			.attr('rx', 5)
 			.attr('ry', 5)
-			.merge(stations)
-			.attr('transform', function(d) {
-				return 'translate(' +
-					map.latLngToLayerPoint(d.latLng).x + ',' +
-					map.latLngToLayerPoint(d.latLng).y + ') rotate(' +
-					((d.angle || 0) + 90) + ')';
-			});
+			.attr('transform', function(d) { return 'rotate(' + ((d.angle || 0) + 90) + ')'; });
+
+		var stationLabels = stations.selectAll('.station-label')
+			.data(function(d) { return [d]; });
+		stationLabels = stationLabels.enter().append('g')
+			.attr('class', 'station-label');
+
+		stationLabels.selectAll('.station-label-back')
+			.data(function(d) { return [d]; })
+			.enter().append('text')
+			.attr('class', 'station-label-back')
+			.attr('dx', function(d) { return textPos(d, 'x'); })
+			.attr('dy', function(d) { return textPos(d, 'y'); })
+			.attr('text-anchor', textAnchor)
+			.text(function(d) { return dict[d.name]; });
+
+		stationLabels.selectAll('.station-label-front')
+			.data(function(d) { return [d]; })
+			.enter().append('text')
+			.attr('class', 'station-label-front')
+			.attr('dx', function(d) { return textPos(d, 'x'); })
+			.attr('dy', function(d) { return textPos(d, 'y'); })
+			.attr('text-anchor', textAnchor)
+			.text(function(d) { return dict[d.name]; });
+	}
+
+	function textPos(d, attr) {
+		var offset = (d.labelOffset || 0) + 10;
+		var rad = (d.labelAngle || 0) * Math.PI / 180;
+		var angle = Math.abs((d.labelAngle || 0) + 90);
+		var v = angle % 360 === 90 ? 4 : (angle + 90) % 360 < 180 ? -1 : 10;
+
+		return attr === 'x' ? offset * Math.cos(rad) : offset * Math.sin(rad) + v;
+	}
+
+	function textAnchor(d) {
+		var angle = Math.abs(d.labelAngle || 0);
+		if (angle % 360 === 90) {
+			return 'middle';
+		}
+		return (angle + 90) % 360 < 180 ? 'start' : 'end';
 	}
 
 	function transition(element) {
@@ -257,3 +303,20 @@ Promise.all([
 		return g.selectAll('.subpath').node().getTotalLength();
 	}
 });
+
+function getLang() {
+	var match = location.search.match(/lang=(.*?)(&|$)/);
+	var lang = match ? decodeURIComponent(match[1]).substring(0, 2) : '';
+
+	if (lang.match(/ja|en|ko|zh/)) {
+		return lang;
+	}
+
+	lang = (window.navigator.languages && window.navigator.languages[0]) ||
+		window.navigator.language ||
+		window.navigator.userLanguage ||
+		window.navigator.browserLanguage || '';
+	lang = lang.substring(0, 2);
+
+	return lang.match(/ja|en|ko|zh/) ? lang : 'en';
+}

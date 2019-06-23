@@ -28,10 +28,15 @@ body {
 .car {
 	stroke: none;
 }
-.station {
+.station-mark {
 	stroke: black;
 	stroke-width: 2;
 	fill: white;
+}
+.station-label-back {
+	stroke: white;
+	stroke-width: 4;
+	fill: none;
 }
 .subpath {
 	display: none;
