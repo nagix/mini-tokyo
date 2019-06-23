@@ -1,6 +1,6 @@
 var map = L.map('map').setView([35.68, 139.75], 13);
-var lineLookup = [];
-var stationLookup = [];
+var lineLookup = {};
+var stationLookup = {};
 var g, trackedCar;
 
 /* For development
@@ -236,9 +236,11 @@ Promise.all([
 	}
 
 	function transition(element) {
-		element.transition()
+		element.attr('transform', function(d) { return translateAlong(d)(0); })
+			.transition()
+			.delay(1000) // Stopping at station
 			.ease(d3.easeSin)
-			.duration(function(d) {return d.duration * Math.abs(d.sectionLength);})
+			.duration(function(d) { return d.duration * Math.abs(d.sectionLength); })
 			.attrTween('transform', translateAlong)
 			.on('end', function(d) {
 				var stations = lineLookup[d.line].stations;
@@ -269,10 +271,13 @@ Promise.all([
 			var p = getPointAtLengthWithRotation(path, (d.sectionOffset + t * d.sectionLength) * length, d.direction > 0 ? length : 0);
 
 			if (d === trackedCar) {
-				var latlng = map.layerPointToLatLng(L.point(p));
-				map.setView(latlng, map.getZoom(), {animate: false});
-				if (latlng === undefined || latlng === null || latlng.lat === undefined || latlng.lat === null || latlng.lat === 0) {
-					console.log(latlng);
+				var original = map.getPixelOrigin();
+				var latLng = map.layerPointToLatLng(L.point(p));
+				map.panTo(latLng, {animate: false});
+
+				// Update the whole layer if the pixel origin has changed
+				if (original != map.getPixelOrigin()) {
+					update();
 				}
 			}
 
