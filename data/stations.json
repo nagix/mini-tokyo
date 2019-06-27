@@ -85,7 +85,7 @@
 		"name": "shinjuku",
 		"coords": [35.6898, 139.7006],
 		"angle": 80,
-		"span": [-1, 0],
+		"span": [-2, 0],
 		"labelOffset": 8
 	}, {
 		"name": "yoyogi",
@@ -147,6 +147,8 @@
 	}, {
 		"name": "ochanomizu",
 		"coords": [35.6997, 139.7645],
+		"angle": -168,
+		"span": [0, 1],
 		"labelAngle": 105
 	}, {
 		"name": "suidobashi",
@@ -162,7 +164,9 @@
 		"labelAngle": 15
 	}, {
 		"name": "yotsuya",
-		"coords": [35.6857, 139.7305]
+		"coords": [35.6857, 139.7305],
+		"angle": 109,
+		"span": [0, 1]
 	}, {
 		"name": "shinanomachi",
 		"coords": [35.6801, 139.7205],

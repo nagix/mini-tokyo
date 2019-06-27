@@ -36,6 +36,18 @@
 		"sectionIndex": 9,
 		"sectionOffset": 0
 	}, {
+		"line": "sobu",
+		"direction": 1,
+		"duration": 50000,
+		"sectionIndex": 0,
+		"sectionOffset": 0
+	}, {
+		"line": "sobu",
+		"direction": -1,
+		"duration": 50000,
+		"sectionIndex": 9,
+		"sectionOffset": 0
+	}, {
 		"line": "chuo",
 		"direction": 1,
 		"duration": 50000,
@@ -45,7 +57,7 @@
 		"line": "chuo",
 		"direction": -1,
 		"duration": 50000,
-		"sectionIndex": 10,
+		"sectionIndex": 4,
 		"sectionOffset": 0
 	}, {
 		"line": "keihintohoku",
